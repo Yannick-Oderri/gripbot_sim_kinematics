@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/include/**",
                 "/opt/ros/melodic/include/**",
+                "~/Dev/catkin/devel/include/**",
                 "/usr/include/**"
             ],
             "defines": [],
