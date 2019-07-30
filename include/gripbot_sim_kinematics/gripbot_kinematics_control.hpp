@@ -2,6 +2,7 @@
 #define GRIPBOT_KINEMATICS_CONTROL_HPP_
 #include <cstring>
 #include <ros/ros.h>
+#include <boost/shared_ptr.hpp>
 #include <gripbot_sim_kinematics/SolvePositionIK.h>
 #include <gripbot_sim_kinematics/kinematics.hpp>
 
@@ -13,15 +14,15 @@ class GripBotKinematicControl
 public:
     // Public constructor
     GripBotKinematicControl(){};
-
-    static std::shared_ptr<GripBotKinematicControl> create()
+    typedef boost::shared_ptr<GripBotKinematicControl> Ptr;
+    static GripBotKinematicControl::Ptr create()
     {
-        std::shared_ptr<GripBotKinematicControl> p_control(new GripBotKinematicControl());
+        Ptr p_control(new GripBotKinematicControl());
         if (p_control->init())
         {
             return p_control;
         }
-        return std::shared_ptr<GripBotKinematicControl>();
+        return Ptr();
     }
 
     // Object initializer

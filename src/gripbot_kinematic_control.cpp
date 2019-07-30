@@ -98,7 +98,7 @@ bool GripBotKinematicControl::IKCallback(gripbot_sim_kinematics::SolvePositionIK
 
 } // namespace gripbot
 
-std::shared_ptr<gripbot::GripBotKinematicControl> gripbot_kinematic_control;
+GripBotKinematicControl::Ptr gripbot_kinematic_control;
 
 //! Helper function for
 void quitRequested(int)
