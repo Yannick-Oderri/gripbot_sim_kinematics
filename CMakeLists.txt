@@ -12,17 +12,7 @@ find_package(catkin
   tf_conversions
   kdl_parser
   gazebo_msgs
-)
-
-
-add_service_files(DIRECTORY srv FILES
-  SolvePositionIK.srv
-)
-
-generate_messages(DEPENDENCIES
-  geometry_msgs
-  sensor_msgs
-  std_msgs
+  gripbot_core_msgs
 )
 
 catkin_package(
@@ -31,6 +21,7 @@ catkin_package(
   message_runtime
   geometry_msgs
   std_msgs
+  gripbot_core_msgs
   gazebo_msgs
   sensor_msgs
   kdl_parser

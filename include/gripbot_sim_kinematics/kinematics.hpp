@@ -64,6 +64,18 @@ public:
     bool getPositionIK(const geometry_msgs::PoseStamped& pose_stamp, const sensor_msgs::JointState& seed,
                         sensor_msgs::JointState* result);
 
+    
+    /* Method to calculate the FK for the required joint configuration
+    *  @returns true if successful
+    */
+    bool getPositionFK(std::string frame_id, const sensor_msgs::JointState& joint_configuration,
+                        geometry_msgs::PoseStamped& res);
+
+    KinematicSolverInfo& getSolverInfo()
+    {
+        return this->info;
+    }
+
 private:
     /* Method to load all the values from the parameter server
     *  @returns true is successful
@@ -87,7 +99,7 @@ private:
 
     /* Members */
     ros::NodeHandle nh, nh_private;
-    std::string root_name, endlink_name, joint_chain_name;
+    std::string root_name, endlink_name;
     KDL::JntArray joint_min, joint_max;
     KDL::Chain chain;
     unsigned int num_joints;

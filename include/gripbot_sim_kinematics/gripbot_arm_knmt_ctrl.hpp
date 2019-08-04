@@ -2,7 +2,8 @@
 #define GRIPBOT_KINEMATICS_CONTROL_HPP_
 #include <cstring>
 #include <ros/ros.h>
-#include <gripbot_sim_kinematics/SolvePositionIK.h>
+#include <gripbot_core_msgs/SolvePositionIK.h>
+#include <gripbot_core_msgs/EndpointState.h>
 #include <gripbot_sim_kinematics/kinematics.hpp>
 
 namespace gripbot
@@ -58,12 +59,31 @@ public:
 
 private:
     /**
+     * Method to pass the desired configuration of the joints and calculate the FK
+     * @return calculated FK pose
+    */
+    geometry_msgs::PoseStamped FKCalc(const sensor_msgs::JointState req);
+
+    /**
    * Callback function for the IK service that responds with the appropriate joint configuration or error message if not
    * found
    */
     bool IKCallback(
-        gripbot_sim_kinematics::SolvePositionIK::Request &req,
-        gripbot_sim_kinematics::SolvePositionIK::Response &res);
+        gripbot_core_msgs::SolvePositionIK::Request &req,
+        gripbot_core_msgs::SolvePositionIK::Response &res);
+
+
+    /**
+     * Callback function for the FK subscriber that retrievs the appropriate FK from the Joint states and publishes it to
+     * the endpoint
+     * topic
+    */
+    void FKCallback(const sensor_msgs::JointState msg);
+
+    /**
+     * Method to Filter the names and positions of the initialized side from the remaining
+    */
+    void FilterJointState(const sensor_msgs::JointState* msg, sensor_msgs::JointState& res);  
 
     // items
     bool init_controls;
@@ -72,8 +92,10 @@ private:
     ros::ServiceServer m_ikService;
     ros::Subscriber joint_states_sub;
     ros::Subscriber robot_state_sub;
+    ros::Publisher end_pointstate_pub;
     ros::NodeHandle handle;
     sensor_msgs::JointState joint;
+    std::vector<std::string> joint_names;
 
     GripBotKinematics::Ptr m_gripbotArm;
     std::vector<GripBotKinematics::Ptr> m_gripbotFingers;

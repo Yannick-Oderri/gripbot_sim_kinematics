@@ -8,7 +8,7 @@ GripBotKinematics::GripBotKinematics() : nh_private("~")
 
 bool GripBotKinematics::init(
     std::string urdf_param_name,
-    std::string rootLink, 
+    std::string rootLink,
     std::string endlink, int &no_jts)
 {
     std::string full_urdf_xml = urdf_param_name;
@@ -35,13 +35,13 @@ bool GripBotKinematics::init(
     double epsilon;
 
     // Get root and tim from parameter service
-    this->nh_private.param("maxIterations", maxIterations, 1000);
+    this->nh_private.param("maxIterations", maxIterations, 10000);
     nh_private.param("epsilon", epsilon, 1e-2);
 
     // Build Solver
     this->fk_solver = new KDL::ChainFkSolverPos_recursive(chain);
     this->ik_solver_vel = new KDL::ChainIkSolverVel_pinv(chain);
-    this->ik_solver_pos =
+    this->ik_solver_pos = 
         new KDL::ChainIkSolverPos_NR_JL(
             this->chain,
             this->joint_min,
@@ -51,6 +51,8 @@ bool GripBotKinematics::init(
             maxIterations,
             epsilon);
     no_jts = this->num_joints;
+
+    return true;
 }
 
 bool GripBotKinematics::loadModel(const std::string xml)
@@ -184,7 +186,7 @@ int GripBotKinematics::getKDLSegmentIndex(const std::string &name)
  *  @returns true if successful
  */
 bool GripBotKinematics::getPositionIK(const geometry_msgs::PoseStamped &pose_stamp,
-                                               const sensor_msgs::JointState &seed, sensor_msgs::JointState *result)
+                                      const sensor_msgs::JointState &seed, sensor_msgs::JointState *result)
 {
     geometry_msgs::PoseStamped pose_msg_in = pose_stamp;
     tf::Stamped<tf::Pose> transform;
@@ -196,6 +198,7 @@ bool GripBotKinematics::getPositionIK(const geometry_msgs::PoseStamped &pose_sta
     KDL::JntArray jnt_pos_out;
 
     jnt_pos_in.resize(this->num_joints);
+    jnt_pos_out.resize(this->num_joints);
     // Copying the positions of the joints relative to its index in the KDL chain
     for (unsigned int i = 0; i < this->num_joints; i++)
     {
@@ -221,8 +224,11 @@ bool GripBotKinematics::getPositionIK(const geometry_msgs::PoseStamped &pose_sta
         return false;
     }
 
-    KDL::Frame F_dest;
-    tf::transformTFToKDL(transform_root, F_dest);
+    KDL::Frame F_dest(KDL::Vector(
+            pose_stamp.pose.position.x,
+            pose_stamp.pose.position.y,
+            pose_stamp.pose.position.z));
+    // ::transformTFToKDL(transform_root, F_dest);
 
     int ik_valid = ik_solver_pos->CartToJnt(jnt_pos_in, F_dest, jnt_pos_out);
 
@@ -237,11 +243,76 @@ bool GripBotKinematics::getPositionIK(const geometry_msgs::PoseStamped &pose_sta
         }
         return true;
     }
+    else if (ik_valid == KDL::SolverI::E_MAX_ITERATIONS_EXCEEDED)
+    {
+        ROS_INFO_NAMED("gripbot", "IK Solution: maximum iterations exceeded");
+        result->name = info.joint_names;
+        result->position.resize(num_joints);
+        for (unsigned int i = 0; i < num_joints; i++)
+        {
+            result->position[i] = jnt_pos_out(i);
+            ROS_DEBUG_NAMED("arm_kinematics", "IK Solution: %s %d: %f", result->name[i].c_str(), i, jnt_pos_out(i));
+        }
+        return false;
+    }
+    else if (ik_valid == KDL::SolverI::E_SIZE_MISMATCH)
+    {
+        ROS_DEBUG_NAMED("arm_kinematics", "An IK internal size mismatch error");
+        return false;
+    }
+    
     else
     {
         ROS_DEBUG_NAMED("arm_kinematics", "An IK solution could not be found");
         return false;
     }
+}
+
+/* Method to calculate the FK for the required joint configuration
+ *  @returns true if successful
+ */
+bool GripBotKinematics::getPositionFK(
+    std::string frame_id, 
+    const sensor_msgs::JointState &joint_configuration,
+    geometry_msgs::PoseStamped &result)
+{
+    KDL::Frame p_out;
+    KDL::JntArray jnt_pos_in;
+    tf::Stamped<tf::Pose> tf_pose;
+
+    // Copying the positions of the joints relative to its index in the KDL chain
+    jnt_pos_in.resize(num_joints);
+    for (unsigned int i = 0; i < num_joints; i++)
+    {
+        int tmp_index = getJointIndex(joint_configuration.name[i]);
+        if (tmp_index >= 0)
+            jnt_pos_in(tmp_index) = joint_configuration.position[i];
+    }
+
+    int num_segments = chain.getNrOfSegments();
+    ROS_DEBUG_ONCE_NAMED("gripbot_kinematics", "Number of Segments in the KDL chain: %d", num_segments);
+    if (fk_solver->JntToCart(jnt_pos_in, p_out, num_segments) >= 0)
+    {
+        tf_pose.frame_id_ = root_name;
+        tf_pose.stamp_ = ros::Time();
+        tf::poseKDLToTF(p_out, tf_pose);
+        try
+        {
+            tf_listener.transformPose(frame_id, tf_pose, tf_pose);
+        }
+        catch (...)
+        {
+            ROS_ERROR_NAMED("arm_kinematics", "Could not transform FK pose to frame: %s", frame_id.c_str());
+            return false;
+        }
+        tf::poseStampedTFToMsg(tf_pose, result);
+    }
+    else
+    {
+        ROS_ERROR_NAMED("arm_kinematics", "Could not compute FK for endpoint.");
+        return false;
+    }
+    return true;
 }
 
 } // namespace gripbot
