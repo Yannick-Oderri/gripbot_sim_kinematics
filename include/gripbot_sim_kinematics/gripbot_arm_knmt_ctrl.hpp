@@ -96,10 +96,9 @@ protected:
     ros::Publisher end_pointstate_pub;
     ros::NodeHandle handle;
     sensor_msgs::JointState joint;
-    std::vector<std::string> joint_names;
+    std::vector<std::string>* joint_names;
+    std::shared_ptr<GripBotKinematics> m_kinematicController;
 
-    GripBotKinematics::Ptr m_gripbotArm;
-    std::vector<GripBotKinematics::Ptr> m_gripbotFingers;
 };
 
 } // namespace gripbot

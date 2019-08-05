@@ -13,13 +13,13 @@ bool gbKnmtCtrl::init()
     const std::string urdf_param("robot_description");
     int arm_joint_count = 0;
 
-    this->m_gripbotArm = GripBotKinematics::create(
+    this->m_kinematicController = GripBotKinematics::create(
         urdf_param,
         "base_mount_link",
         "forearm_visual_link",
         arm_joint_count);
 
-    if (!this->m_gripbotArm)
+    if (!this->m_kinematicController)
     {
         ROS_FATAL_NAMED("gripbot", "Failed to load gripbot arm");
         return false;
@@ -35,20 +35,22 @@ bool gbKnmtCtrl::init()
         this);
 
     // Subscribe and advertise the subscribers and publishers accordingly for the Forward Kinematics
-    joint_states_sub = handle.subscribe<sensor_msgs::JointState>(
+    this->joint_states_sub = handle.subscribe<sensor_msgs::JointState>(
         JOINT_STATES,
-        100,
+        50,
         &gbKnmtCtrl::FKCallback,
         this);
-    end_pointstate_pub = handle.advertise<gripbot_core_msgs::EndpointState>(
+    this->end_pointstate_pub = handle.advertise<gripbot_core_msgs::EndpointState>(
         node_path + "/endpoint_state", 
-        100);
+        50);
 
-    if (!handle.getParam("gripbot/arm_config/joint_names", joint_names))
+    /* if (!handle.getParam("gripbot/arm_config/joint_names", joint_names))
     {
       ROS_FATAL_NAMED("gripbot", "GenericIK: No Joint Names for the Arm found on parameter server");
       return false;
-    }
+    }*/
+
+    this->joint_names = &this->m_kinematicController->getSolverInfo().joint_names;
 
     return true;
 }
@@ -73,7 +75,7 @@ bool gbKnmtCtrl::IKCallback(
 
         if (!req.seed_angles.empty() && req.seed_mode != gripbot_core_msgs::SolvePositionIKRequest::SEED_CURRENT)
         {
-            res.isValid[req_index] = this->m_gripbotArm->getPositionIK(
+            res.isValid[req_index] = this->m_kinematicController->getPositionIK(
                 req.pose_stamp[req_index],
                 req.seed_angles[req_index],
                 &joint_pose);
@@ -85,7 +87,7 @@ bool gbKnmtCtrl::IKCallback(
 
         if ((!res.isValid[req_index]) && req.seed_mode != gripbot_core_msgs::SolvePositionIKRequest::SEED_USER)
         {
-            res.isValid[req_index] = this->m_gripbotArm->getPositionIK(
+            res.isValid[req_index] = this->m_kinematicController->getPositionIK(
                 req.pose_stamp[req_index], joint, &joint_pose);
             res.joints[req_index].name.resize(joint_pose.name.size());
             res.result_type[req_index] = gripbot_core_msgs::SolvePositionIKRequest::SEED_CURRENT;
@@ -137,16 +139,16 @@ void gbKnmtCtrl::FKCallback(const sensor_msgs::JointState msg)
 void gbKnmtCtrl::FilterJointState(const sensor_msgs::JointState *msg, sensor_msgs::JointState &res)
 {
     // Resize the result to hold the names and positions of the 7 joints
-    res.name.resize(this->joint_names.size());
-    res.position.resize(this->joint_names.size());
+    res.name.resize(this->joint_names->size());
+    res.position.resize(this->joint_names->size());
     int i = 0;
     for (size_t ind = 0; ind < msg->name.size(); ind++)
     {
         // Retain the names and positions of the joints of the initialized arm
         if (std::find(
-            this->joint_names.begin(),
-            this->joint_names.end(), 
-            msg->name[ind]) != this->joint_names.end())
+            this->joint_names->begin(),
+            this->joint_names->end(), 
+            msg->name[ind]) != this->joint_names->end())
         {
             res.name[i] = msg->name[ind];
             res.position[i] = msg->position[ind];
@@ -163,7 +165,7 @@ geometry_msgs::PoseStamped gbKnmtCtrl::FKCalc(const sensor_msgs::JointState conf
 {
     bool isV;
     geometry_msgs::PoseStamped fk_result;
-    isV = this->m_gripbotArm->getPositionFK("base_mount_link", configuration, fk_result);
+    isV = this->m_kinematicController->getPositionFK("base_mount_link", configuration, fk_result);
     return fk_result;
 }
 

@@ -3,8 +3,6 @@
 
 using namespace gripbot;
 
-const std::string JOINT_STATES("/gripbot/joint_states");
-
 
 bool gbGrprKnmtCtrl::init(
     std::string name,
@@ -12,7 +10,7 @@ bool gbGrprKnmtCtrl::init(
     std::string endlink_name
 ){
     this->m_name = name;
-    this->is_enabled = false;    
+    this->is_enabled = true;    
     int joint_count = 0;
 
     const std::string urdf_param("robot_description");
@@ -31,24 +29,27 @@ bool gbGrprKnmtCtrl::init(
     std::string node_path("/gripbot/kinematics/gripper/" + this->m_name);
     ros::NodeHandle effector_handle(node_path);
 
+    this->joint_names = &this->m_kinematicController->getSolverInfo().joint_names;
+
+
     gbKnmtCtrl * ctrl = this;
     this->m_ikService = effector_handle.advertiseService(
         "ikservice",
-        &gbKnmtCtrl::IKCallback,
+        &gbGrprKnmtCtrl::IKCallback,
         ctrl
     );
 
     // Subscribe and advertise the subscribers and publishers accordingly for the Forward Kinematics
     this->m_joint_states_sub = this->m_controllerNode.subscribe<sensor_msgs::JointState>(
-        "/gripbot/joints_states",
-        100,
-        &gbKnmtCtrl::FKCallback,
+        "/gripbot/joint_states",
+        50,
+        &gbGrprKnmtCtrl::FKCallback,
         ctrl);
 
-    this->m_endlink_pub = this->m_controllerNode.advertise<gripbot_core_msgs::EndpointState>(
+    this->end_pointstate_pub = this->m_controllerNode.advertise<gripbot_core_msgs::EndpointState>(
         node_path + "/endpoint_state", 
-        100);
-
+        50);
     return true;
 
 }
+

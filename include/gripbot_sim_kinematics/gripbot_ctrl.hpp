@@ -17,10 +17,10 @@ namespace gripbot
         bool init()
         {
             // initialize arm kinematics
-            if(!this->m_arm_ctrl.init()){
+            /* if(!this->m_arm_ctrl.init()){
                 ROS_FATAL_NAMED("gripbot", "Error while initialize gripbot arm.");
                 return false;
-            }
+            }*/
             
 
             for(std::vector<gbGrprKnmtCtrl>::size_type i = 0; i != this->m_effector_ctrl_list.size(); i++) {

@@ -19,8 +19,6 @@ namespace gripbot
             std::string endlink_name
         );
         
-
-
     protected:
 
 
@@ -29,7 +27,6 @@ namespace gripbot
         ros::Subscriber m_joint_states_sub;
         ros::Publisher m_endlink_pub;
         ros::NodeHandle m_controllerNode;
-        std::shared_ptr<GripBotKinematics> m_kinematicController;
         std::string m_name;
         std::string m_robotlink_name;
         std::string m_endlink_name;
