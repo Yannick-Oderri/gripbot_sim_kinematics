@@ -32,10 +32,13 @@ include_directories(include
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(${PROJECT_NAME} src/kinematics.cpp)
+add_library(${PROJECT_NAME} 
+  src/kinematics.cpp
+  src/gripbot_grpr_knmt_ctrl.cpp
+  src/gripbot_arm_knmt_ctrl.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
-add_executable(gripbot_kinematics src/gripbot_kinematic_control.cpp)
+add_executable(gripbot_kinematics src/gripbot_ctrl.cpp)
 target_link_libraries(gripbot_kinematics ${catkin_LIBRARIES} ${PROJECT_NAME})
 
 add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})

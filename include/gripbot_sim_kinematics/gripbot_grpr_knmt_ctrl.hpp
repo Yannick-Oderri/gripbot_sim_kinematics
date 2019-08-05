@@ -3,26 +3,37 @@
 
 #include <cstring>
 #include <ros/ros.h>
-#include <gripbot_sim_kinematics/kinematics.hpp>
-
+#include <gripbot_core_msgs/SolvePositionIK.h>
+#include <gripbot_core_msgs/EndpointState.h>
+#include <gripbot_sim_kinematics/gripbot_arm_knmt_ctrl.hpp>
 
 namespace gripbot
 {
 
-class GripBotGripperKinematics
-{
-public:
-    bool init();
-    
+    class gbGrprKnmtCtrl: public gbKnmtCtrl
+    {
+    public:
+        virtual bool init(
+            std::string name,
+            std::string rootlink_name,
+            std::string endlink_name
+        );
+        
 
 
-private:
-    ros::NodeHandle controllerNode;
-    GripBotKinematics kinematicController;
-    std::string name;
-    std::string rootlink_name;
-    std::string endlink_name;
-};
+    protected:
+
+
+        bool is_enabled;
+        ros::ServiceServer m_ikService;
+        ros::Subscriber m_joint_states_sub;
+        ros::Publisher m_endlink_pub;
+        ros::NodeHandle m_controllerNode;
+        std::shared_ptr<GripBotKinematics> m_kinematicController;
+        std::string m_name;
+        std::string m_robotlink_name;
+        std::string m_endlink_name;
+    };
 
 
 }

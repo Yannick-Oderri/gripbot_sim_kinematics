@@ -1,12 +1,11 @@
 #include <gripbot_sim_kinematics/kinematics.hpp>
 #include <gripbot_sim_kinematics/gripbot_arm_knmt_ctrl.hpp>
-#include <signal.h>
 
 namespace gripbot
 {
 static const std::string JOINT_STATES = "/gripbot/joint_states";
 
-bool GripBotKinematicControl::init()
+bool gbKnmtCtrl::init()
 {
     // default robot disable
     this->is_enabled = false;    
@@ -32,14 +31,14 @@ bool GripBotKinematicControl::init()
     // setup the service
     this->m_ikService = arm_handle.advertiseService(
         "IKService",
-        &GripBotKinematicControl::IKCallback,
+        &gbKnmtCtrl::IKCallback,
         this);
 
     // Subscribe and advertise the subscribers and publishers accordingly for the Forward Kinematics
     joint_states_sub = handle.subscribe<sensor_msgs::JointState>(
         JOINT_STATES,
         100,
-        &GripBotKinematicControl::FKCallback,
+        &gbKnmtCtrl::FKCallback,
         this);
     end_pointstate_pub = handle.advertise<gripbot_core_msgs::EndpointState>(
         node_path + "/endpoint_state", 
@@ -58,7 +57,7 @@ bool GripBotKinematicControl::init()
  * Callback function for the IK service that responds with the appropriate joint configuration or error message if not
  * found
  */
-bool GripBotKinematicControl::IKCallback(
+bool gbKnmtCtrl::IKCallback(
     gripbot_core_msgs::SolvePositionIK::Request &req,
     gripbot_core_msgs::SolvePositionIK::Response &res)
 {
@@ -115,15 +114,15 @@ bool GripBotKinematicControl::IKCallback(
  * Callback function for the FK subscriber that retrievs the appropriate FK from the Joint states and publishes
  * to the endpoint_state topic
  */
-void GripBotKinematicControl::FKCallback(const sensor_msgs::JointState msg)
+void gbKnmtCtrl::FKCallback(const sensor_msgs::JointState msg)
 {
     gripbot_core_msgs::EndpointState endpoint;
 
     sensor_msgs::JointState configuration;
 
-    GripBotKinematicControl::FilterJointState(&msg, this->joint);
+    gbKnmtCtrl::FilterJointState(&msg, this->joint);
     // Copy the current Joint positions and names of the appropriate side to the configuration
-    endpoint.pose = GripBotKinematicControl::FKCalc(this->joint).pose;
+    endpoint.pose = gbKnmtCtrl::FKCalc(this->joint).pose;
 
     // Fill out timestamp for endpoint
     endpoint.header.stamp = msg.header.stamp;
@@ -135,7 +134,7 @@ void GripBotKinematicControl::FKCallback(const sensor_msgs::JointState msg)
 /**
  * Method to Filter the names and positions of the initialized side from the remaining
  */
-void GripBotKinematicControl::FilterJointState(const sensor_msgs::JointState *msg, sensor_msgs::JointState &res)
+void gbKnmtCtrl::FilterJointState(const sensor_msgs::JointState *msg, sensor_msgs::JointState &res)
 {
     // Resize the result to hold the names and positions of the 7 joints
     res.name.resize(this->joint_names.size());
@@ -160,7 +159,7 @@ void GripBotKinematicControl::FilterJointState(const sensor_msgs::JointState *ms
  * Method to pass the desired configuration of the joints and calculate the FK
  * @return calculated FK
  */
-geometry_msgs::PoseStamped GripBotKinematicControl::FKCalc(const sensor_msgs::JointState configuration)
+geometry_msgs::PoseStamped gbKnmtCtrl::FKCalc(const sensor_msgs::JointState configuration)
 {
     bool isV;
     geometry_msgs::PoseStamped fk_result;
@@ -170,7 +169,7 @@ geometry_msgs::PoseStamped GripBotKinematicControl::FKCalc(const sensor_msgs::Jo
 
 } // namespace gripbot
 
-std::shared_ptr<gripbot::GripBotKinematicControl> gripbot_kinematic_control;
+std::shared_ptr<gripbot::gbKnmtCtrl> gripbot_kinematic_control;
 
 //! Helper function for
 void quitRequested(int)
@@ -182,25 +181,4 @@ void quitRequested(int)
     }
 
     ros::shutdown();
-}
-
-/**
- * Entry point for program. Sets up Node, parses
- * command line arguments, then control loop (calling run() on Node)
- */
-int main(int argc, char *argv[])
-{
-    ros::init(argc, argv, "gripbot_kinematics", ros::init_options::NoSigintHandler);
-
-    //capture signal and attemp to cleanup Node
-    signal(SIGINT, quitRequested);
-
-    gripbot_kinematic_control = gripbot::GripBotKinematicControl::create();
-
-    if (gripbot_kinematic_control)
-    {
-        gripbot_kinematic_control->run();
-    }
-
-    return 0;
 }

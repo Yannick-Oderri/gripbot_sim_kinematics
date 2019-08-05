@@ -9,24 +9,24 @@
 namespace gripbot
 {
 
-class GripBotKinematicControl
+class gbKnmtCtrl
 {
 public:
     // Public constructor
-    GripBotKinematicControl(){};
+    gbKnmtCtrl(){};
 
-    static std::shared_ptr<GripBotKinematicControl> create()
+    static std::shared_ptr<gbKnmtCtrl> create()
     {
-        std::shared_ptr<GripBotKinematicControl> p_control(new GripBotKinematicControl());
+        std::shared_ptr<gbKnmtCtrl> p_control(new gbKnmtCtrl());
         if (p_control->init())
         {
             return p_control;
         }
-        return std::shared_ptr<GripBotKinematicControl>();
+        return std::shared_ptr<gbKnmtCtrl>();
     }
 
     // Object initializer
-    bool init();
+    virtual bool init();
 
     /**
      * Method that serves as the main execution loop of the Node.  This is called in the main() function to 'run'
@@ -57,18 +57,18 @@ public:
         // this->end_pointstate_pub.shutdown();
     }
 
-private:
+public:
     /**
      * Method to pass the desired configuration of the joints and calculate the FK
      * @return calculated FK pose
     */
-    geometry_msgs::PoseStamped FKCalc(const sensor_msgs::JointState req);
+    virtual geometry_msgs::PoseStamped FKCalc(const sensor_msgs::JointState req);
 
     /**
    * Callback function for the IK service that responds with the appropriate joint configuration or error message if not
    * found
    */
-    bool IKCallback(
+    virtual bool IKCallback(
         gripbot_core_msgs::SolvePositionIK::Request &req,
         gripbot_core_msgs::SolvePositionIK::Response &res);
 
@@ -78,13 +78,14 @@ private:
      * the endpoint
      * topic
     */
-    void FKCallback(const sensor_msgs::JointState msg);
+    virtual void FKCallback(const sensor_msgs::JointState msg);
 
     /**
      * Method to Filter the names and positions of the initialized side from the remaining
     */
-    void FilterJointState(const sensor_msgs::JointState* msg, sensor_msgs::JointState& res);  
+    virtual void FilterJointState(const sensor_msgs::JointState* msg, sensor_msgs::JointState& res);  
 
+protected:
     // items
     bool init_controls;
     bool is_enabled;
