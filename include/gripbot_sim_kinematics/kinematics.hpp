@@ -1,7 +1,6 @@
 #ifndef KINEMATICS_HPP_
 #define KINEMATICS_HPP_
 #include <cstring>
-#include <boost/shared_ptr.hpp>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_kdl.h>
@@ -34,7 +33,7 @@ typedef struct INFO
 class GripBotKinematics
 {
 public:
-    typedef boost::shared_ptr<GripBotKinematics> Ptr;
+    typedef std::shared_ptr<GripBotKinematics> Ptr;
     static Ptr create(
         std::string urdf_param_name,
         std::string rootlink_name, 

@@ -87,8 +87,8 @@ bool GripBotKinematics::loadModel(const std::string xml)
 bool GripBotKinematics::readJoints(urdf::Model &robot_model)
 {
     this->num_joints = 0;
-    boost::shared_ptr<const urdf::Link> link = robot_model.getLink(endlink_name);
-    boost::shared_ptr<const urdf::Joint> joint;
+    std::shared_ptr<const urdf::Link> link = robot_model.getLink(endlink_name);
+    std::shared_ptr<const urdf::Joint> joint;
 
     for (int i = 0; i < chain.getNrOfSegments(); i++)
         while (link && link->name != root_name)
